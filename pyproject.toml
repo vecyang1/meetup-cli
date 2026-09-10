@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meetupcli"
+version = "1.0.0"
+description = "Fast, zero-token CLI & Python SDK for querying Meetup.com activities, events, and groups."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "V" }
+]
+keywords = ["meetup", "events", "activities", "cli", "nomad", "networking", "community", "apollo", "nextjs"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Utilities",
+]
+
+dependencies = []
+
+[project.scripts]
+meetup = "meetupcli.cli:main"
+meetupcli = "meetupcli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/vecyang1/meetup-cli"
+Repository = "https://github.com/vecyang1/meetup-cli.git"
+Issues = "https://github.com/vecyang1/meetup-cli/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
