@@ -2,12 +2,18 @@
 """Unit tests for MeetupClient transport, caching, and error handling."""
 
 import io
+import os
 import shutil
+import sys
 import tempfile
 import unittest
 import urllib.error
 from unittest.mock import MagicMock, patch
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from meetupcli.client import MeetupClient
+from meetupcli.models import Event, Group
 from meetupcli.parser import MeetupNotFoundError, MeetupNetworkError
 
 
@@ -56,7 +62,7 @@ class TestClient(unittest.TestCase):
             code=404,
             msg="Not Found",
             hdrs={},
-            fp=None,
+            fp=io.BytesIO(b""),
         )
         self.client._opener = mock_opener
 
@@ -70,7 +76,7 @@ class TestClient(unittest.TestCase):
             code=500,
             msg="Internal Server Error",
             hdrs={},
-            fp=None,
+            fp=io.BytesIO(b""),
         )
         self.client._opener = mock_opener
 
@@ -82,7 +88,6 @@ class TestClient(unittest.TestCase):
     @patch("meetupcli.client.MeetupClient.fetch")
     @patch("meetupcli.client.parse_events_from_html")
     def test_search_events_query_alias_and_strict(self, mock_parse, mock_fetch):
-        from meetupcli.models import Event
         mock_fetch.return_value = "<html>mock</html>"
         mock_parse.return_value = [
             Event(id="1", title="Tokyo Python Meetup", event_url="https://meetup.com/1"),
@@ -97,9 +102,18 @@ class TestClient(unittest.TestCase):
 
     @patch("meetupcli.client.MeetupClient.search_events")
     def test_search_events_bulk(self, mock_search):
-        from meetupcli.models import Event
         mock_search.side_effect = lambda location, **kw: [Event(id=location, title=f"Event in {location}", event_url="url")]
         bulk = self.client.search_events_bulk(locations=["tokyo", "hanoi"], keywords="ai", concurrency=2)
+        self.assertEqual(len(bulk), 2)
+        self.assertIn("tokyo", bulk)
+        self.assertIn("hanoi", bulk)
+        self.assertEqual(bulk["tokyo"][0].id, "tokyo")
+        self.assertEqual(bulk["hanoi"][0].id, "hanoi")
+
+    @patch("meetupcli.client.MeetupClient.search_groups")
+    def test_search_groups_bulk(self, mock_search):
+        mock_search.side_effect = lambda location, **kw: [Group(id=location, name=f"Group in {location}", link="url")]
+        bulk = self.client.search_groups_bulk(locations=["tokyo", "hanoi"], keywords="python", concurrency=2)
         self.assertEqual(len(bulk), 2)
         self.assertIn("tokyo", bulk)
         self.assertIn("hanoi", bulk)

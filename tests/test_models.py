@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 """Unit tests for meetupcli data models."""
 
+import os
+import sys
 import unittest
-from meetupcli.models import Venue, FeeSettings, Group, Event, CityPreset
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
+from meetupcli.models import CityPreset, Event, FeeSettings, Group, Venue
 
 
 class TestModels(unittest.TestCase):
@@ -45,6 +50,7 @@ class TestModels(unittest.TestCase):
         d = g.to_dict()
         self.assertEqual(d["id"], "123")
         self.assertEqual(d["member_count"], 1500)
+        self.assertEqual(d["display_location"], "Tokyo, JP")
 
     def test_event_properties(self):
         e_physical = Event(

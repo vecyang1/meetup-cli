@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """Unit tests for city presets and location resolver."""
 
+import os
+import sys
 import unittest
-from meetupcli.presets import list_presets, resolve_location, get_preset
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
+from meetupcli.presets import (
+    get_preset,
+    list_presets,
+    resolve_location,
+    resolve_location_and_keywords,
+)
 
 
 class TestPresets(unittest.TestCase):
@@ -62,6 +72,32 @@ class TestPresets(unittest.TestCase):
         self.assertEqual(p.slug, "jp--tokyo")
 
         self.assertIsNone(get_preset("nonexistent_city_xyz"))
+
+    def test_resolve_location_and_keywords(self):
+        # Single preset city
+        loc, kw = resolve_location_and_keywords("tokyo")
+        self.assertEqual(loc, "tokyo")
+        self.assertEqual(kw, "")
+
+        # City with keyword
+        loc, kw = resolve_location_and_keywords("hanoi AI")
+        self.assertEqual(loc, "hanoi")
+        self.assertEqual(kw, "AI")
+
+        # Multi-word preset with keyword
+        loc, kw = resolve_location_and_keywords("new york tech")
+        self.assertEqual(loc, "new york")
+        self.assertEqual(kw, "tech")
+
+        # Multilingual preset with keyword
+        loc, kw = resolve_location_and_keywords("东京 python web3")
+        self.assertEqual(loc, "东京")
+        self.assertEqual(kw, "python web3")
+
+        # Already a slug with no keywords
+        loc, kw = resolve_location_and_keywords("jp--tokyo")
+        self.assertEqual(loc, "jp--tokyo")
+        self.assertEqual(kw, "")
 
 
 if __name__ == "__main__":

@@ -371,7 +371,8 @@ def parse_groups_from_html(html: str) -> List[Group]:
     for ref in ordered_refs:
         g_data = apollo.get(ref)
         if isinstance(g_data, dict):
-            if g_data.get("__typename") == "Group" or "name" in g_data:
+            name = g_data.get("name")
+            if (g_data.get("__typename") == "Group" or "name" in g_data) and name:
                 groups.append(parse_group(g_data, apollo))
 
     return groups

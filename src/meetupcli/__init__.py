@@ -9,11 +9,32 @@ Extracts Next.js Apollo state with zero API keys or browser automation required.
 License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
 """
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "V"
 __license__ = "GPL-3.0-or-later"
 
 from .client import MeetupClient
+from .formatter import (
+    format_bulk_events_csv,
+    format_bulk_events_json,
+    format_bulk_events_markdown,
+    format_bulk_events_table,
+    format_bulk_groups_csv,
+    format_bulk_groups_json,
+    format_bulk_groups_markdown,
+    format_bulk_groups_table,
+    format_events_csv,
+    format_events_json,
+    format_events_markdown,
+    format_events_table,
+    format_events_urls,
+    format_groups_csv,
+    format_groups_json,
+    format_groups_markdown,
+    format_groups_table,
+    format_groups_urls,
+    format_single_event_card,
+)
 from .models import CityPreset, Event, FeeSettings, Group, Venue
 from .parser import (
     MeetupError,
@@ -21,7 +42,12 @@ from .parser import (
     MeetupNotFoundError,
     MeetupParseError,
 )
-from .presets import get_preset, list_presets, resolve_location
+from .presets import (
+    get_preset,
+    list_presets,
+    resolve_location,
+    resolve_location_and_keywords,
+)
 
 __all__ = [
     "__version__",
@@ -39,12 +65,32 @@ __all__ = [
     "MeetupNotFoundError",
     "list_presets",
     "resolve_location",
+    "resolve_location_and_keywords",
     "get_preset",
     "search_events",
     "search_groups",
     "search_events_bulk",
     "search_groups_bulk",
     "get_event",
+    "format_events_table",
+    "format_events_json",
+    "format_events_markdown",
+    "format_events_csv",
+    "format_events_urls",
+    "format_groups_table",
+    "format_groups_json",
+    "format_groups_markdown",
+    "format_groups_csv",
+    "format_groups_urls",
+    "format_bulk_events_table",
+    "format_bulk_events_json",
+    "format_bulk_events_markdown",
+    "format_bulk_events_csv",
+    "format_bulk_groups_table",
+    "format_bulk_groups_json",
+    "format_bulk_groups_markdown",
+    "format_bulk_groups_csv",
+    "format_single_event_card",
 ]
 
 _default_client = None

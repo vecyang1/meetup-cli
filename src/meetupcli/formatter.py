@@ -47,9 +47,15 @@ def pad_display(s: str, w: int) -> str:
 
 
 def _sanitize_csv_cell(val: Any) -> str:
-    s = str(val or "").strip()
+    if val is None:
+        return ""
+    s = str(val).strip()
     if s and s[0] in ("=", "+", "-", "@"):
-        return f"'{s}"
+        try:
+            float(s)
+            return s
+        except ValueError:
+            return f"'{s}"
     return s
 
 
@@ -134,10 +140,10 @@ def format_events_markdown(events: List[Event]) -> str:
         "|---|---|---|---|---|---|---|",
     ]
     for e in events:
-        title = e.title.replace("|", "-").strip()
-        grp = e.group_name.replace("|", "-").strip()
+        title = " ".join(e.title.replace("|", "-").split())
+        grp = " ".join(e.group_name.replace("|", "-").split())
         fee_str = e.fee.display_fee() if e.fee else "Free"
-        loc = e.location_display().replace("|", "-").strip()
+        loc = " ".join(e.location_display().replace("|", "-").split())
         link = f"[View Event]({e.event_url})" if e.event_url else "N/A"
         lines.append(f"| {e.formatted_date()} | {title} | {grp} | {e.rsvp_count} | {fee_str} | {loc} | {link} |")
     return "\n".join(lines)
@@ -149,9 +155,9 @@ def format_groups_markdown(groups: List[Group]) -> str:
         "|---|---|---|---|---|",
     ]
     for g in groups:
-        name = g.name.replace("|", "-").strip()
+        name = " ".join(g.name.replace("|", "-").split())
         rating_str = f"{g.rating:.1f} ({g.rating_count})" if g.rating else "N/A"
-        loc = g.display_location().replace("|", "-").strip()
+        loc = " ".join(g.display_location().replace("|", "-").split())
         link = f"[Join Group]({g.link})" if g.link else "N/A"
         lines.append(f"| {name} | {g.member_count} | {rating_str} | {loc} | {link} |")
     return "\n".join(lines)
@@ -168,13 +174,13 @@ def format_events_table(events: List[Event]) -> str:
         rsvps_str = f"{e.rsvp_count} going"
         loc_str = "Online" if e.is_online else (e.venue.city if e.venue and e.venue.city else "In-Person")
         rows.append([
-            date_str,
-            e.title,
-            e.group_name,
+            " ".join(date_str.split()),
+            " ".join(e.title.split()),
+            " ".join(e.group_name.split()),
             rsvps_str,
             fee_str,
-            loc_str,
-            e.event_url,
+            " ".join(loc_str.split()),
+            e.event_url.strip(),
         ])
 
     headers = ["DATE", "EVENT TITLE", "GROUP", "RSVPS", "FEE", "TYPE", "LINK"]
@@ -208,11 +214,11 @@ def format_groups_table(groups: List[Group]) -> str:
     for g in groups:
         rating_str = f"{g.rating:.1f}★" if g.rating else "-"
         rows.append([
-            g.name,
+            " ".join(g.name.split()),
             f"{g.member_count:,}",
             rating_str,
-            g.display_location(),
-            g.link,
+            " ".join(g.display_location().split()),
+            g.link.strip(),
         ])
 
     col_widths = [get_display_width(h) for h in headers]
@@ -321,6 +327,64 @@ def format_bulk_events_csv(bulk_results: Dict[str, List[Event]]) -> str:
                 _sanitize_csv_cell(e.group_name),
                 _sanitize_csv_cell(e.location_display()),
                 _sanitize_csv_cell(e.event_url),
+            ]
+            writer.writerow(row)
+    return output.getvalue().strip()
+
+
+def format_bulk_groups_json(bulk_results: Dict[str, List[Group]], pretty: bool = True) -> str:
+    raw = {loc: [g.to_dict() for g in grps] for loc, grps in bulk_results.items()}
+    return json.dumps(raw, indent=2 if pretty else None, ensure_ascii=False)
+
+
+def format_bulk_groups_markdown(bulk_results: Dict[str, List[Group]]) -> str:
+    sections: List[str] = []
+    for loc, grps in bulk_results.items():
+        sections.append(f"### 📍 Location: `{loc}` ({len(grps)} groups)")
+        if grps:
+            sections.append(format_groups_markdown(grps))
+        else:
+            sections.append("_No groups found matching criteria._")
+        sections.append("")
+    return "\n".join(sections).strip()
+
+
+def format_bulk_groups_table(bulk_results: Dict[str, List[Group]]) -> str:
+    sections: List[str] = []
+    for loc, grps in bulk_results.items():
+        banner = f"=== 📍 Location: {loc} ({len(grps)} groups) ==="
+        sections.append(banner)
+        if grps:
+            sections.append(format_groups_table(grps))
+        else:
+            sections.append("No groups found matching criteria.")
+        sections.append("")
+    return "\n".join(sections).strip()
+
+
+def format_bulk_groups_csv(bulk_results: Dict[str, List[Group]]) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    headers = [
+        "search_city",
+        "id",
+        "name",
+        "members",
+        "rating",
+        "location",
+        "link",
+    ]
+    writer.writerow(headers)
+    for loc, grps in bulk_results.items():
+        for g in grps:
+            row = [
+                _sanitize_csv_cell(loc),
+                _sanitize_csv_cell(g.id),
+                _sanitize_csv_cell(g.name),
+                _sanitize_csv_cell(g.member_count),
+                _sanitize_csv_cell(f"{g.rating:.1f}" if g.rating else "N/A"),
+                _sanitize_csv_cell(g.display_location()),
+                _sanitize_csv_cell(g.link),
             ]
             writer.writerow(row)
     return output.getvalue().strip()

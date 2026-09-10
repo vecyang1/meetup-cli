@@ -72,7 +72,9 @@ class Group:
         return ", ".join(parts) if parts else "Location not specified"
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        res = asdict(self)
+        res["display_location"] = self.display_location()
+        return res
 
 
 @dataclass
@@ -120,6 +122,7 @@ class Event:
             raw = self.date_time
             if "[" in raw:
                 raw = raw.split("[")[0]
+            raw = raw.replace("Z", "+00:00")
             dt = datetime.fromisoformat(raw)
             return dt.strftime("%Y-%m-%d %H:%M")
         except Exception:
@@ -137,6 +140,7 @@ class Event:
             raw = self.end_time
             if "[" in raw:
                 raw = raw.split("[")[0]
+            raw = raw.replace("Z", "+00:00")
             dt = datetime.fromisoformat(raw)
             return dt.strftime("%Y-%m-%d %H:%M")
         except Exception:

@@ -2,19 +2,33 @@
 """Unit tests for formatter display width, CJK terminal alignment, and bulk renderers."""
 
 import json
+import os
+import sys
 import unittest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from meetupcli.formatter import (
-    get_display_width,
-    truncate_to_display_width,
-    pad_display,
-    format_events_table,
-    format_groups_table,
+    _sanitize_csv_cell,
+    format_bulk_events_csv,
     format_bulk_events_json,
     format_bulk_events_markdown,
     format_bulk_events_table,
-    format_bulk_events_csv,
+    format_bulk_groups_csv,
+    format_bulk_groups_json,
+    format_bulk_groups_markdown,
+    format_bulk_groups_table,
+    format_events_csv,
+    format_events_markdown,
+    format_events_table,
+    format_groups_csv,
+    format_groups_markdown,
+    format_groups_table,
+    get_display_width,
+    pad_display,
+    truncate_to_display_width,
 )
-from meetupcli.models import Event, Group, Venue, FeeSettings
+from meetupcli.models import Event, FeeSettings, Group, Venue
 
 
 class TestFormatter(unittest.TestCase):
@@ -47,6 +61,37 @@ class TestFormatter(unittest.TestCase):
         self.assertEqual(widths[1], widths[2])
         self.assertEqual(widths[3], widths[4])
 
+    def test_csv_sanitizer_zero_and_negative(self):
+        # Numeric 0 should NOT be blanked out to empty string
+        self.assertEqual(_sanitize_csv_cell(0), "0")
+        self.assertEqual(_sanitize_csv_cell("0"), "0")
+        # None should be empty string
+        self.assertEqual(_sanitize_csv_cell(None), "")
+        # Negative numbers should remain numeric strings without single quote
+        self.assertEqual(_sanitize_csv_cell(-5), "-5")
+        self.assertEqual(_sanitize_csv_cell("-122.4"), "-122.4")
+        # Formula injection should be escaped with leading single quote
+        self.assertEqual(_sanitize_csv_cell("=cmd|' /C calc'!A0"), "'=cmd|' /C calc'!A0")
+        self.assertEqual(_sanitize_csv_cell("+cmd"), "'+cmd")
+        self.assertEqual(_sanitize_csv_cell("@SUM(A1:A10)"), "'@SUM(A1:A10)")
+
+    def test_newline_stripping_in_table_and_markdown(self):
+        ev = Event(
+            id="1",
+            title="Tokyo Tech\nNew Line Title",
+            group_name="Tokyo\nGroup",
+            event_url="https://meetup.com/1",
+        )
+        table = format_events_table([ev])
+        # Table lines should not have broken sublines
+        lines = table.split("\n")
+        self.assertEqual(len(lines), 5)  # sep, header, sep, row, sep
+        self.assertIn("Tokyo Tech New Line Title", table)
+
+        md = format_events_markdown([ev])
+        self.assertIn("Tokyo Tech New Line Title", md)
+        self.assertNotIn("\nNew Line Title", md)
+
     def test_bulk_formatters(self):
         ev = Event(id="101", title="Hanoi Founders", event_url="https://meetup.com/101")
         bulk_data = {"tokyo": [], "hanoi": [ev]}
@@ -73,6 +118,32 @@ class TestFormatter(unittest.TestCase):
         csv_out = format_bulk_events_csv(bulk_data)
         self.assertIn("search_city,id,title", csv_out)
         self.assertIn("hanoi,101,Hanoi Founders", csv_out)
+
+    def test_bulk_groups_formatters(self):
+        grp = Group(id="202", name="Tokyo Rust", link="https://meetup.com/tokyo-rust", member_count=1200)
+        bulk_data = {"tokyo": [grp], "hanoi": []}
+
+        # JSON
+        raw_json = format_bulk_groups_json(bulk_data)
+        parsed = json.loads(raw_json)
+        self.assertIn("tokyo", parsed)
+        self.assertIn("hanoi", parsed)
+        self.assertEqual(parsed["tokyo"][0]["name"], "Tokyo Rust")
+
+        # Markdown
+        md = format_bulk_groups_markdown(bulk_data)
+        self.assertIn("Location: `tokyo`", md)
+        self.assertIn("Tokyo Rust", md)
+
+        # Table
+        tbl = format_bulk_groups_table(bulk_data)
+        self.assertIn("Location: tokyo", tbl)
+        self.assertIn("Tokyo Rust", tbl)
+
+        # CSV
+        csv_out = format_bulk_groups_csv(bulk_data)
+        self.assertIn("search_city,id,name,members", csv_out)
+        self.assertIn("tokyo,202,Tokyo Rust,1200", csv_out)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](pyproject.toml)
-[![Tests: 45 passing](https://img.shields.io/badge/Tests-45%20passing-success.svg)](tests/)
+[![Tests: 56 passing](https://img.shields.io/badge/Tests-56%20passing-success.svg)](tests/)
 
 Fast, production-grade CLI & Python SDK for querying [Meetup.com](https://www.meetup.com) tech events, social activities, networking meetups, and developer communities.
 
@@ -52,11 +52,16 @@ pip install -e .
 # Search tech events in Tokyo
 meetup events tokyo --keywords tech --limit 5
 
-# Positional shorthand also works directly
-meetup tokyo --keywords ai
+# Positional shorthand with keywords works directly
+meetup tokyo ai
+meetup "hanoi AI"
+meetup "new york tech"
 
 # Filter only in-person events in Hanoi with at least 5 RSVPs
 meetup events hanoi --type in-person --min-rsvps 5
+
+# Multi-city concurrent events query
+meetup events tokyo,hanoi,shanghai -q "ai"
 
 # Export New York Python events to JSON
 meetup events 'new york' --keywords python --json -o ny_python.json
@@ -71,8 +76,12 @@ meetup events london --keywords "web3" --urls-only
 ### 2. Searching Groups & Communities
 
 ```bash
-# Find Python groups in Tokyo
+# Find Python groups in Tokyo (positional or flag)
+meetup groups tokyo python
 meetup groups tokyo --keywords python
+
+# Multi-city concurrent groups search
+meetup groups tokyo,hanoi -q "ai"
 
 # Filter groups with at least 500 members
 meetup groups tokyo --keywords ai --min-members 500
@@ -115,6 +124,11 @@ meetup doctor --json
 ```bash
 # View cache statistics
 meetup cache status
+meetup cache status --json
+
+# List cached responses with age, size, and validity
+meetup cache list
+meetup cache list --json
 
 # Clear local cache
 meetup cache clear
@@ -165,11 +179,11 @@ Following Unix toolchain conventions:
 
 ## Testing & Verification
 
-Run the full two-sided test suite (32 unit and live E2E tests):
+Run the full two-sided test suite (56 unit and live E2E tests):
 
 ```bash
 cd meetup-cli
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
 
 ---

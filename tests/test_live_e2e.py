@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 """Live E2E tests against actual Meetup.com public pages."""
 
+import os
+import sys
 import unittest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from meetupcli.client import MeetupClient
 
 

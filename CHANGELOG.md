@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-10
+
+### Fixed
+- **CLI Subcommand Collision on Keyword Arguments**: Fixed severe argument parser collision where checking `any(arg in known_commands for arg in argv)` caused user queries containing subcommand names (e.g. `meetup tokyo -q doctor`, `meetup tokyo -q info`, `meetup tokyo -q cache`) to treat the query term as a subcommand and crash argparse with `invalid choice: 'tokyo'`. Replaced with non-option positional token inspection.
+- **CSV Sanitizer Zero RSVPs and Members Erasure**: In `formatter.py`, `_sanitize_csv_cell(val)` used `str(val or "")`, which evaluated numeric `0` to `""`, wiping out all `0` RSVPs and `0` member counts in CSV output. Fixed to preserve `0` and negative numbers while continuing to guard against spreadsheet formula injection (`=`, `+`, `-`, `@`).
+- **Terminal Table and Markdown Embedded Newlines**: Embedded `\n` or `\r` characters in event titles and group names broke table rows and Markdown formatting. Sanitized multi-line whitespace across table and markdown formatters.
+- **Python 3.8-3.10 ISO 8601 Timestamp Compatibility**: In `models.py`, `datetime.fromisoformat()` in Python <= 3.10 could not parse trailing `'Z'` timezone offsets. Added `'Z'` to `'+00:00'` normalization to guarantee compatibility across all Python 3.8+ versions.
+- **Apollo Group Parsing Edge Case**: Guarded `parse_groups_from_html()` in `parser.py` against incomplete Apollo Group cache references that lacked a `name` attribute.
+- **Test Suite Portability**: Added `sys.path.insert(0, ...)` across all unit test files and `tests/__init__.py`, enabling clean `python3 -m unittest discover` out-of-the-box without requiring manual `PYTHONPATH=src`.
+
+### Added
+- **Positional Keywords Support**: Added `extra_keywords` to `events` and `groups` subparsers, enabling intuitive syntax like `meetup tokyo ai` and `meetup groups tokyo python`.
+- **Smart Location & Keyword Splitting**: Added `resolve_location_and_keywords()` in `presets.py` to transparently separate known location presets from trailing keywords (e.g. `meetup "hanoi AI"`, `meetup "new york tech"`).
+- **Cache Inspection Subcommand (`meetup cache list`)**: Fully implemented cached response listing with file hash, relative age, size in KB, validity status (`VALID`/`EXPIRED`), cached URL, and `--json` export support.
+- **Multi-City Groups Discovery**: Added multi-city search to `groups` subcommand (`meetup groups tokyo,hanoi`), with `--cities`, `--concurrency`, `--match-keyword`, and formatters `format_bulk_groups_table`, `format_bulk_groups_json`, `format_bulk_groups_markdown`, and `format_bulk_groups_csv`.
+- **Bulk Subcommand Feature Parity**: Added `--urls-only`, `--min-rsvps`, and `--sort` flags to `meetup bulk`.
+- **Group Dictionary Location Field**: Added `display_location` to `Group.to_dict()` output.
+- **Expanded Test Coverage**: Expanded test suite from 45 to 56 tests covering argument collision, CSV sanitization, cache listing, multi-city groups, and smart preset splitting.
+
 ## [1.1.0] - 2026-09-10
 
 ### Fixed

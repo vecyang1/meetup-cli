@@ -104,3 +104,36 @@ def get_preset(query: str) -> Optional[CityPreset]:
             if re.sub(r"[\s\-_,.]+", "", k) == simplified:
                 return preset
     return None
+
+
+def resolve_location_and_keywords(location: str) -> tuple:
+    """
+    Resolve a user input string that might contain both location and keyword.
+    E.g. 'hanoi AI' -> ('hanoi', 'AI')
+         'new-york tech' -> ('new-york', 'tech')
+         'san francisco rust' -> ('san francisco', 'rust')
+         'tokyo' -> ('tokyo', '')
+    Returns (cleaned_location, extracted_keywords).
+    """
+    if not location or not location.strip():
+        return "", ""
+
+    clean = location.strip()
+    norm = clean.lower()
+
+    # If it's already a slug or exact match in lookup, no trailing keywords
+    if "--" in clean or norm in _LOOKUP:
+        return clean, ""
+
+    # Try splitting words to find preset prefix
+    words = clean.split()
+    if len(words) > 1:
+        for prefix_len in range(len(words) - 1, 0, -1):
+            prefix_candidate = " ".join(words[:prefix_len]).lower()
+            if prefix_candidate in _LOOKUP:
+                loc_part = " ".join(words[:prefix_len])
+                trailing_kw = " ".join(words[prefix_len:])
+                return loc_part, trailing_kw
+
+    return clean, ""
+
