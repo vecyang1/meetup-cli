@@ -9,7 +9,7 @@ Extracts Next.js Apollo state with zero API keys or browser automation required.
 License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "V"
 __license__ = "GPL-3.0-or-later"
 
@@ -42,6 +42,8 @@ __all__ = [
     "get_preset",
     "search_events",
     "search_groups",
+    "search_events_bulk",
+    "search_groups_bulk",
     "get_event",
 ]
 
@@ -55,22 +57,87 @@ def _get_client() -> MeetupClient:
     return _default_client
 
 
-def search_events(location: str, keywords: str = "", event_type: str = "all", limit: int = 20):
+def search_events(
+    location: str,
+    keywords: str = "",
+    query: str = None,
+    event_type: str = "all",
+    limit: int = 20,
+    strict_keywords: bool = False,
+    date_range: str = None,
+    distance: str = None,
+):
     """Convenience function to search events using a default client."""
     return _get_client().search_events(
         location=location,
         keywords=keywords,
+        query=query,
         event_type=event_type,
         limit=limit,
+        strict_keywords=strict_keywords,
+        date_range=date_range,
+        distance=distance,
     )
 
 
-def search_groups(location: str, keywords: str = "", limit: int = 20):
+def search_groups(
+    location: str,
+    keywords: str = "",
+    query: str = None,
+    limit: int = 20,
+    strict_keywords: bool = False,
+):
     """Convenience function to search groups using a default client."""
     return _get_client().search_groups(
         location=location,
         keywords=keywords,
+        query=query,
         limit=limit,
+        strict_keywords=strict_keywords,
+    )
+
+
+def search_events_bulk(
+    locations: list,
+    keywords: str = "",
+    query: str = None,
+    event_type: str = "all",
+    limit_per_city: int = 10,
+    concurrency: int = 4,
+    strict_keywords: bool = False,
+    date_range: str = None,
+    distance: str = None,
+):
+    """Convenience function to concurrently search events across multiple locations."""
+    return _get_client().search_events_bulk(
+        locations=locations,
+        keywords=keywords,
+        query=query,
+        event_type=event_type,
+        limit_per_city=limit_per_city,
+        concurrency=concurrency,
+        strict_keywords=strict_keywords,
+        date_range=date_range,
+        distance=distance,
+    )
+
+
+def search_groups_bulk(
+    locations: list,
+    keywords: str = "",
+    query: str = None,
+    limit_per_city: int = 10,
+    concurrency: int = 4,
+    strict_keywords: bool = False,
+):
+    """Convenience function to concurrently search groups across multiple locations."""
+    return _get_client().search_groups_bulk(
+        locations=locations,
+        keywords=keywords,
+        query=query,
+        limit_per_city=limit_per_city,
+        concurrency=concurrency,
+        strict_keywords=strict_keywords,
     )
 
 

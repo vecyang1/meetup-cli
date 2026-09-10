@@ -9,6 +9,7 @@ Zero external runtime dependencies.
 License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
 """
 
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -17,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .models import Event, Group
 from .parser import (
@@ -182,21 +183,31 @@ class MeetupClient:
         self,
         location: str,
         keywords: str = "",
+        query: Optional[str] = None,
         event_type: str = "all",  # 'all', 'inPerson', 'online'
         limit: int = 20,
+        strict_keywords: bool = False,
+        date_range: Optional[str] = None,
+        distance: Optional[str] = None,
         use_cache: bool = True,
     ) -> List[Event]:
         """
         Search events in a given location with keywords and type filters.
+        Supports 'query' as an alias for 'keywords'.
         """
+        effective_keywords = (query if query is not None else keywords).strip()
         loc_slug = resolve_location(location)
         params: Dict[str, Any] = {
             "source": "EVENTS",
         }
         if loc_slug:
             params["location"] = loc_slug
-        if keywords:
-            params["keywords"] = keywords
+        if effective_keywords:
+            params["keywords"] = effective_keywords
+        if date_range:
+            params["dateRange"] = date_range
+        if distance:
+            params["distance"] = distance
             
         et = event_type.lower()
         if et in ("inperson", "in-person", "physical"):
@@ -208,11 +219,19 @@ class MeetupClient:
         html = self.fetch(url, params=params, use_cache=use_cache)
         events = parse_events_from_html(html)
 
-        # Apply client-side filters if needed
+        # Apply client-side format filters if needed
         if et in ("inperson", "in-person", "physical"):
             events = [e for e in events if not e.is_online]
         elif et == "online":
             events = [e for e in events if e.is_online]
+
+        # Strict keyword matching if requested
+        if strict_keywords and effective_keywords:
+            kw = effective_keywords.lower()
+            events = [
+                e for e in events
+                if kw in e.title.lower() or kw in e.description.lower() or kw in e.group_name.lower()
+            ]
 
         if limit and limit > 0:
             events = events[:limit]
@@ -223,29 +242,131 @@ class MeetupClient:
         self,
         location: str,
         keywords: str = "",
+        query: Optional[str] = None,
         limit: int = 20,
+        strict_keywords: bool = False,
         use_cache: bool = True,
     ) -> List[Group]:
         """
         Search groups / communities in a given location.
+        Supports 'query' as an alias for 'keywords'.
         """
+        effective_keywords = (query if query is not None else keywords).strip()
         loc_slug = resolve_location(location)
         params: Dict[str, Any] = {
             "source": "GROUPS",
         }
         if loc_slug:
             params["location"] = loc_slug
-        if keywords:
-            params["keywords"] = keywords
+        if effective_keywords:
+            params["keywords"] = effective_keywords
 
         url = f"{self.base_url}/find/"
         html = self.fetch(url, params=params, use_cache=use_cache)
         groups = parse_groups_from_html(html)
 
+        if strict_keywords and effective_keywords:
+            kw = effective_keywords.lower()
+            groups = [
+                g for g in groups
+                if kw in g.name.lower() or kw in g.description.lower()
+            ]
+
         if limit and limit > 0:
             groups = groups[:limit]
 
         return groups
+
+    def search_events_bulk(
+        self,
+        locations: List[str],
+        keywords: str = "",
+        query: Optional[str] = None,
+        event_type: str = "all",
+        limit_per_city: int = 10,
+        concurrency: int = 4,
+        strict_keywords: bool = False,
+        date_range: Optional[str] = None,
+        distance: Optional[str] = None,
+        use_cache: bool = True,
+    ) -> Dict[str, List[Event]]:
+        """
+        Concurrently search events across multiple cities/locations.
+        Returns a mapping of {location: List[Event]}.
+        """
+        results: Dict[str, List[Event]] = {}
+        if not locations:
+            return results
+
+        max_workers = max(1, min(concurrency, len(locations)))
+
+        def _fetch_one(loc: str) -> tuple:
+            try:
+                evs = self.search_events(
+                    location=loc,
+                    keywords=keywords,
+                    query=query,
+                    event_type=event_type,
+                    limit=limit_per_city,
+                    strict_keywords=strict_keywords,
+                    date_range=date_range,
+                    distance=distance,
+                    use_cache=use_cache,
+                )
+                return loc, evs, None
+            except Exception as exc:
+                return loc, [], exc
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_fetch_one, loc) for loc in locations]
+            for future in concurrent.futures.as_completed(futures):
+                loc, evs, _err = future.result()
+                results[loc] = evs
+
+        # Preserve original location order
+        return {loc: results.get(loc, []) for loc in locations}
+
+    def search_groups_bulk(
+        self,
+        locations: List[str],
+        keywords: str = "",
+        query: Optional[str] = None,
+        limit_per_city: int = 10,
+        concurrency: int = 4,
+        strict_keywords: bool = False,
+        use_cache: bool = True,
+    ) -> Dict[str, List[Group]]:
+        """
+        Concurrently search groups across multiple cities/locations.
+        Returns a mapping of {location: List[Group]}.
+        """
+        results: Dict[str, List[Group]] = {}
+        if not locations:
+            return results
+
+        max_workers = max(1, min(concurrency, len(locations)))
+
+        def _fetch_one(loc: str) -> tuple:
+            try:
+                grs = self.search_groups(
+                    location=loc,
+                    keywords=keywords,
+                    query=query,
+                    limit=limit_per_city,
+                    strict_keywords=strict_keywords,
+                    use_cache=use_cache,
+                )
+                return loc, grs, None
+            except Exception as exc:
+                return loc, [], exc
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_fetch_one, loc) for loc in locations]
+            for future in concurrent.futures.as_completed(futures):
+                loc, grs, _err = future.result()
+                results[loc] = grs
+
+        return {loc: results.get(loc, []) for loc in locations}
 
     def get_event(self, event_id_or_url: str, use_cache: bool = True) -> Event:
         """

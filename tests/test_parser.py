@@ -172,6 +172,66 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(MeetupNotFoundError):
             parse_single_event_html(empty_html)
 
+    def test_parse_recommended_events_and_groups_dereferencing(self):
+        # Test the real Meetup SSR format where edges are references to edge objects
+        apollo = {
+            "ROOT_QUERY": {
+                'recommendedEvents:{"filter":{"lat":35.6}}': {
+                    "edges": [
+                        {"__ref": 'RecommendedEventsEdge:{"node":{"id":"901"}}'},
+                        {"__ref": 'RecommendedEventsEdge:{"node":{"id":"902"}}'},
+                    ]
+                },
+                'recommendedGroups:{"filter":{"lat":35.6}}': {
+                    "edges": [
+                        {"__ref": 'RecommendedGroupEdge:{"node":{"id":"950"}}'},
+                    ]
+                }
+            },
+            'RecommendedEventsEdge:{"node":{"id":"901"}}': {
+                "node": {"__ref": "Event:901"}
+            },
+            'RecommendedEventsEdge:{"node":{"id":"902"}}': {
+                "node": {"__ref": "Event:902"}
+            },
+            'RecommendedGroupEdge:{"node":{"id":"950"}}': {
+                "node": {"__ref": "Group:950"}
+            },
+            "Event:901": {
+                "__typename": "Event",
+                "id": "901",
+                "title": "Tokyo Tech Mixer",
+                "eventUrl": "https://meetup.com/events/901/",
+                "dateTime": "2026-10-10T19:00:00Z",
+            },
+            "Event:902": {
+                "__typename": "Event",
+                "id": "902",
+                "title": "Tokyo AI Study",
+                "eventUrl": "https://meetup.com/events/902/",
+                "dateTime": "2026-10-11T19:00:00Z",
+            },
+            "Group:950": {
+                "__typename": "Group",
+                "id": "950",
+                "name": "Tokyo AI Guild",
+                "urlname": "tokyo-ai-guild",
+                "link": "https://meetup.com/tokyo-ai-guild/",
+                "city": "Tokyo",
+                "country": "jp",
+            }
+        }
+        html = _build_mock_html(apollo)
+        events = parse_events_from_html(html)
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0].id, "901")
+        self.assertEqual(events[1].id, "902")
+
+        groups = parse_groups_from_html(html)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0].id, "950")
+        self.assertEqual(groups[0].name, "Tokyo AI Guild")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -76,6 +76,22 @@ class TestModels(unittest.TestCase):
         self.assertTrue(d["is_online"])
         self.assertFalse(d["is_free"])
 
+    def test_event_fee_settings_and_end_time(self):
+        fee = FeeSettings(amount=25.0, currency="USD")
+        e = Event(
+            id="ev_03",
+            title="Design System Workshop",
+            event_url="https://meetup.com/ev_03",
+            date_time="2026-11-01T10:00:00Z",
+            end_time="2026-11-01T12:30:00Z",
+            fee=fee,
+        )
+        self.assertEqual(e.fee_settings, fee)
+        self.assertEqual(e.formatted_date(), "2026-11-01 10:00")
+        self.assertEqual(e.formatted_end_time(), "2026-11-01 12:30")
+        d = e.to_dict()
+        self.assertEqual(d["formatted_end_time"], "2026-11-01 12:30")
+
 
 if __name__ == "__main__":
     unittest.main()

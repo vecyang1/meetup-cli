@@ -142,6 +142,47 @@ class TestCli(unittest.TestCase):
             code = main(["doctor"])
             self.assertEqual(code, EXIT_CONTRACT)
 
+    @patch("meetupcli.client.MeetupClient.search_events")
+    def test_shorthand_with_leading_flags(self, mock_search):
+        mock_search.return_value = []
+        with patch("sys.stdout", new=io.StringIO()):
+            code = main(["--no-cache", "tokyo"])
+            self.assertEqual(code, EXIT_SUCCESS)
+            mock_search.assert_called_once()
+            self.assertEqual(mock_search.call_args[1]["location"], "tokyo")
+
+    @patch("meetupcli.client.MeetupClient.search_events")
+    def test_events_flag_shortcuts_and_aliases(self, mock_search):
+        mock_search.return_value = []
+        with patch("sys.stdout", new=io.StringIO()):
+            # Test -q and --online
+            code = main(["events", "tokyo", "-q", "rust", "--online"])
+            self.assertEqual(code, EXIT_SUCCESS)
+            call_kwargs = mock_search.call_args[1]
+            self.assertEqual(call_kwargs["keywords"], "rust")
+            self.assertEqual(call_kwargs["event_type"], "online")
+
+    @patch("meetupcli.client.MeetupClient.search_events_bulk")
+    def test_bulk_command(self, mock_bulk):
+        mock_bulk.return_value = {"tokyo": [], "hanoi": []}
+        with patch("sys.stdout", new=io.StringIO()) as fake_out:
+            code = main(["bulk", "tokyo", "hanoi", "--json"])
+            self.assertEqual(code, EXIT_SUCCESS)
+            mock_bulk.assert_called_once()
+            self.assertEqual(mock_bulk.call_args[1]["locations"], ["tokyo", "hanoi"])
+            data = json.loads(fake_out.getvalue())
+            self.assertIn("tokyo", data)
+            self.assertIn("hanoi", data)
+
+    @patch("meetupcli.client.MeetupClient.search_events_bulk")
+    def test_events_multi_city_comma(self, mock_bulk):
+        mock_bulk.return_value = {"tokyo": [], "hanoi": []}
+        with patch("sys.stdout", new=io.StringIO()) as fake_out:
+            code = main(["events", "tokyo,hanoi", "--json"])
+            self.assertEqual(code, EXIT_SUCCESS)
+            mock_bulk.assert_called_once()
+            self.assertEqual(mock_bulk.call_args[1]["locations"], ["tokyo", "hanoi"])
+
 
 if __name__ == "__main__":
     unittest.main()

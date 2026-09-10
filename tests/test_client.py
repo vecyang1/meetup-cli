@@ -79,6 +79,33 @@ class TestClient(unittest.TestCase):
         # 1 initial + 1 retry = 2 attempts
         self.assertEqual(mock_opener.open.call_count, 2)
 
+    @patch("meetupcli.client.MeetupClient.fetch")
+    @patch("meetupcli.client.parse_events_from_html")
+    def test_search_events_query_alias_and_strict(self, mock_parse, mock_fetch):
+        from meetupcli.models import Event
+        mock_fetch.return_value = "<html>mock</html>"
+        mock_parse.return_value = [
+            Event(id="1", title="Tokyo Python Meetup", event_url="https://meetup.com/1"),
+            Event(id="2", title="Tokyo Salsa Dancing", event_url="https://meetup.com/2"),
+        ]
+
+        # Test query alias and strict_keywords filter
+        evs = self.client.search_events(location="tokyo", query="python", strict_keywords=True)
+        self.assertEqual(len(evs), 1)
+        self.assertEqual(evs[0].id, "1")
+        self.assertEqual(mock_fetch.call_args[1]["params"]["keywords"], "python")
+
+    @patch("meetupcli.client.MeetupClient.search_events")
+    def test_search_events_bulk(self, mock_search):
+        from meetupcli.models import Event
+        mock_search.side_effect = lambda location, **kw: [Event(id=location, title=f"Event in {location}", event_url="url")]
+        bulk = self.client.search_events_bulk(locations=["tokyo", "hanoi"], keywords="ai", concurrency=2)
+        self.assertEqual(len(bulk), 2)
+        self.assertIn("tokyo", bulk)
+        self.assertIn("hanoi", bulk)
+        self.assertEqual(bulk["tokyo"][0].id, "tokyo")
+        self.assertEqual(bulk["hanoi"][0].id, "hanoi")
+
 
 if __name__ == "__main__":
     unittest.main()

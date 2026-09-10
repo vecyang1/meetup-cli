@@ -237,17 +237,25 @@ def parse_events_from_html(html: str) -> List[Event]:
 
     if isinstance(root, dict):
         for k, v in root.items():
-            if ("eventSearch" in k or "rankedEvents" in k) and isinstance(v, dict):
-                edges = v.get("edges", [])
-                if isinstance(edges, list):
-                    for edge in edges:
-                        if isinstance(edge, dict):
-                            node = edge.get("node", {})
-                            if isinstance(node, dict) and "__ref" in node:
-                                ref = node["__ref"]
-                                if ref not in seen_refs:
-                                    seen_refs.add(ref)
-                                    ordered_refs.append(ref)
+            k_lower = k.lower()
+            if any(term in k_lower for term in ["eventsearch", "rankedevents", "recommendedevents", "searchevents"]) or (
+                "event" in k_lower and isinstance(v, dict) and "edges" in v
+            ):
+                if isinstance(v, dict):
+                    edges = v.get("edges", [])
+                    if isinstance(edges, list):
+                        for edge in edges:
+                            if isinstance(edge, dict):
+                                if "__ref" in edge:
+                                    edge_obj = apollo.get(edge["__ref"])
+                                    node = edge_obj.get("node", {}) if isinstance(edge_obj, dict) else {}
+                                else:
+                                    node = edge.get("node", {})
+                                if isinstance(node, dict) and "__ref" in node:
+                                    ref = node["__ref"]
+                                    if ref not in seen_refs:
+                                        seen_refs.add(ref)
+                                        ordered_refs.append(ref)
 
     for k in apollo.keys():
         if k.startswith("Event:") and k not in seen_refs:
@@ -334,17 +342,25 @@ def parse_groups_from_html(html: str) -> List[Group]:
 
     if isinstance(root, dict):
         for k, v in root.items():
-            if ("groupSearch" in k or "rankedGroups" in k) and isinstance(v, dict):
-                edges = v.get("edges", [])
-                if isinstance(edges, list):
-                    for edge in edges:
-                        if isinstance(edge, dict):
-                            node = edge.get("node", {})
-                            if isinstance(node, dict) and "__ref" in node:
-                                ref = node["__ref"]
-                                if ref not in seen_refs:
-                                    seen_refs.add(ref)
-                                    ordered_refs.append(ref)
+            k_lower = k.lower()
+            if any(term in k_lower for term in ["groupsearch", "rankedgroups", "recommendedgroups", "searchgroups"]) or (
+                "group" in k_lower and isinstance(v, dict) and "edges" in v
+            ):
+                if isinstance(v, dict):
+                    edges = v.get("edges", [])
+                    if isinstance(edges, list):
+                        for edge in edges:
+                            if isinstance(edge, dict):
+                                if "__ref" in edge:
+                                    edge_obj = apollo.get(edge["__ref"])
+                                    node = edge_obj.get("node", {}) if isinstance(edge_obj, dict) else {}
+                                else:
+                                    node = edge.get("node", {})
+                                if isinstance(node, dict) and "__ref" in node:
+                                    ref = node["__ref"]
+                                    if ref not in seen_refs:
+                                        seen_refs.add(ref)
+                                        ordered_refs.append(ref)
 
     for k in apollo.keys():
         if k.startswith("Group:") and k not in seen_refs:
@@ -364,10 +380,25 @@ def parse_groups_from_html(html: str) -> List[Group]:
 def parse_single_event_html(html: str) -> Event:
     """
     Parse an Event from an event detail page HTML.
+    Uses authoritative root event query pointer when available.
     """
     data = extract_next_data(html)
     apollo = extract_apollo_state(data)
 
+    # 1. First check ROOT_QUERY for authoritative event pointer
+    root = apollo.get("ROOT_QUERY", {})
+    target_ref = None
+    if isinstance(root, dict):
+        for k, v in root.items():
+            if k.startswith("event(") and isinstance(v, dict) and "__ref" in v:
+                target_ref = v["__ref"]
+                break
+
+    # 2. If target ref found and exists in apollo
+    if target_ref and target_ref in apollo:
+        return parse_event(apollo[target_ref], apollo)
+
+    # 3. Fallback to scanning Event: keys
     event_keys = [k for k in apollo.keys() if k.startswith("Event:")]
     if not event_keys:
         raise MeetupNotFoundError("No Event entity found on this page")

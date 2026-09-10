@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-10
+
+### Fixed
+- **Apollo Search Ranking Edge Resolution**: Fixed critical bug in `parser.py` where default searches without keywords (`recommendedEvents` and `recommendedGroups`) failed to resolve `ROOT_QUERY` ordered edges and dereference edge objects (`RecommendedEventsEdge`), falling back to unordered hash map keys.
+- **CLI Shorthand Argument Resolution**: Fixed argument parsing crash when flags preceded positional shorthand (e.g. `meetup --no-cache tokyo` failing with `invalid choice: 'tokyo'`).
+- **CJK Terminal Display Width Alignment**: Replaced naive `len()` string padding in `formatter.py` with `unicodedata.east_asian_width` calculation, ensuring tables containing Chinese, Japanese, or East Asian characters and emojis stay aligned.
+- **Documentation & Contract Parity**: Added `-q` as alias for `-k`/`--keywords`, `--online` and `--in-person` flag shortcuts, `query` parameter alias in Python SDK, and `fee_settings` compatibility property on `Event`.
+- **Event End Time Formatting**: Added `Event.formatted_end_time()` to format event end times consistently with `formatted_date()` instead of displaying raw ISO strings.
+
+### Added
+- **Multi-City Bulk Research & Concurrency**: Added `meetup bulk` subcommand and multi-location comma syntax in `meetup events tokyo,hanoi,nyc` powered by `concurrent.futures.ThreadPoolExecutor` with configurable `--concurrency` worker threads.
+- **Multilingual Preset Geocoding**: Enriched `presets.py` with Chinese, Japanese, and Vietnamese aliases (e.g. `东京`, `河内`, `上海`, `北京`, `纽约`, `旧金山`, `台北`, `Hà Nội`) and Unicode-safe location normalization.
+- **Python SDK Bulk Search**: Exported `search_events_bulk` and `search_groups_bulk` in `meetupcli` package.
+- **Comprehensive Test Suite Expansion**: Added unit tests for CJK table width alignment, multi-city bulk search, `query` alias, and Apollo edge dereferencing (expanded from 32 to 45 passing tests).
+
 ## [1.0.0] - 2026-09-10
 
 ### Added

@@ -43,6 +43,19 @@ class TestPresets(unittest.TestCase):
         self.assertEqual(resolve_location("Da Lat"), "Da Lat")
         self.assertEqual(resolve_location(""), "")
 
+    def test_resolve_multilingual_aliases(self):
+        self.assertEqual(resolve_location("东京"), "jp--tokyo")
+        self.assertEqual(resolve_location("河内"), "vn--hanoi")
+        self.assertEqual(resolve_location("上海"), "cn--shanghai")
+        self.assertEqual(resolve_location("北京"), "cn--beijing")
+        self.assertEqual(resolve_location("台北"), "tw--taipei")
+        self.assertEqual(resolve_location("纽约"), "us--ny--new-york")
+        self.assertEqual(resolve_location("旧金山"), "us--ca--san-francisco")
+        self.assertEqual(resolve_location("伦敦"), "gb--greater-london")
+        self.assertEqual(resolve_location("Hà Nội"), "vn--hanoi")
+        self.assertEqual(resolve_location("胡志明"), "vn--ho-chi-minh-city")
+        self.assertEqual(resolve_location("柏林"), "de--berlin")
+
     def test_get_preset(self):
         p = get_preset("tokyo")
         self.assertIsNotNone(p)

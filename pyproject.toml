@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "meetupcli"
-version = "1.0.0"
+version = "1.1.0"
 description = "Fast, zero-token CLI & Python SDK for querying Meetup.com activities, events, and groups."
 readme = "README.md"
 requires-python = ">=3.8"

@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](pyproject.toml)
-[![Tests: 32 passing](https://img.shields.io/badge/Tests-32%20passing-success.svg)](tests/)
+[![Tests: 45 passing](https://img.shields.io/badge/Tests-45%20passing-success.svg)](tests/)
 
 Fast, production-grade CLI & Python SDK for querying [Meetup.com](https://www.meetup.com) tech events, social activities, networking meetups, and developer communities.
 
@@ -13,10 +13,12 @@ Fast, production-grade CLI & Python SDK for querying [Meetup.com](https://www.me
 ## Highlights
 
 - **Direct Apollo Cache Extraction**: Extracts authoritative Next.js SSR Apollo Client state (`<script id="__NEXT_DATA__">`) without Puppeteer/Playwright or API keys.
-- **Zero Runtime Dependencies**: Built entirely with Python's standard library (`urllib`, `json`, `re`, `dataclasses`, `argparse`). Runs out of the box on Python 3.8+.
-- **City Presets & Smart Geocoding**: Curated shortcuts for 30+ global hubs (`tokyo`, `hanoi`, `nyc`, `sf`, `london`, `shanghai`, `taipei`, `bangkok`, etc.) with automatic slug resolution and plain city name fallback.
-- **Rich Multi-Format Outputs**: Terminal table (with auto column wrapping), raw JSON (`--json`), clean Markdown (`--markdown`), RFC-4180 CSV (`--csv`), and newline-separated links (`--urls-only`).
-- **Flexible Filters**: Filter by keywords (`-k`), format (`--type in-person` or `online`), free/paid status (`--free-only`, `--paid-only`), and minimum RSVPs (`--min-rsvps`).
+- **Zero Runtime Dependencies**: Built entirely with Python's standard library (`urllib`, `concurrent.futures`, `json`, `re`, `dataclasses`, `argparse`, `unicodedata`). Runs out of the box on Python 3.8+.
+- **Multi-City Bulk Research & Concurrency**: Query activities across multiple cities in parallel with `meetup bulk tokyo hanoi nyc` or `meetup events tokyo,hanoi,shanghai`.
+- **City Presets & Multilingual Geocoding**: Curated shortcuts for 30+ global hubs with native language resolution (e.g. `东京`, `河内`, `上海`, `北京`, `纽约`, `旧金山`, `台北`, `Hà Nội`) and automatic slug resolution.
+- **CJK Terminal Alignment**: Pixel-perfect ASCII table rendering with East Asian character width calculation (`unicodedata`).
+- **Rich Multi-Format Outputs**: Terminal table, raw JSON (`--json`), clean Markdown (`--markdown`), RFC-4180 CSV (`--csv`), and newline-separated links (`--urls-only`).
+- **Flexible Filters**: Filter by keywords (`-k` or `-q`), format (`--online` or `--in-person`), date range (`--date-range`), free/paid status (`--free-only`, `--paid-only`), and minimum RSVPs (`--min-rsvps`).
 - **Single Event Inspector**: Look up full event details and markdown descriptions using a bare numeric ID (e.g. `315701498`) or full URL.
 - **Built-in Health Doctor**: `meetup doctor` continuously tests the live Meetup SSR schema contracts.
 - **Smart Response Caching**: Fast local file cache (`~/.cache/meetupcli`) to save bandwidth and prevent rate-limiting during exploratory research.
@@ -134,8 +136,7 @@ events = client.search_events(location="tokyo", keywords="ai", event_type="in-pe
 for event in events:
     print(f"[{event.formatted_date()}] {event.title} ({event.rsvp_count} going)")
     print(f"Location: {event.location_display()}")
-    print(f"URL: {event.event_url}
-")
+    print(f"URL: {event.event_url}\n")
 
 # Search groups
 groups = client.search_groups(location="hanoi", keywords="tech", limit=5)

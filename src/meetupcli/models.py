@@ -125,11 +125,29 @@ class Event:
         except Exception:
             return self.date_time
 
+    @property
+    def fee_settings(self) -> Optional[FeeSettings]:
+        """Compatibility alias for self.fee."""
+        return self.fee
+
+    def formatted_end_time(self) -> Optional[str]:
+        if not self.end_time:
+            return None
+        try:
+            raw = self.end_time
+            if "[" in raw:
+                raw = raw.split("[")[0]
+            dt = datetime.fromisoformat(raw)
+            return dt.strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            return self.end_time
+
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
         res["is_online"] = self.is_online
         res["is_free"] = self.is_free
         res["formatted_date"] = self.formatted_date()
+        res["formatted_end_time"] = self.formatted_end_time()
         res["location_display"] = self.location_display()
         return res
 
