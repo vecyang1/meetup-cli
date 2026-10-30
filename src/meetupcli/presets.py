@@ -12,7 +12,7 @@ import re
 from typing import Dict, List, Optional
 from .models import CityPreset
 
-# Curated registry of high-frequency tech & nomad hubs
+# Curated registry of high-frequency tech & global mobility hubs
 PRESETS: List[CityPreset] = [
     CityPreset(name="Tokyo", slug="jp--tokyo", country_code="JP", aliases=["tokyo", "tyo", "shibuya", "shinjuku", "japan", "东京", "東京", "とうきょう"]),
     CityPreset(name="Hanoi", slug="vn--hanoi", country_code="VN", aliases=["hanoi", "ha noi", "han", "vietnam", "河内", "hà nội"]),

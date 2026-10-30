@@ -12,7 +12,7 @@ license = { text = "GPL-3.0-or-later" }
 authors = [
     { name = "V" }
 ]
-keywords = ["meetup", "events", "activities", "cli", "nomad", "networking", "community", "apollo", "nextjs"]
+keywords = ["meetup", "events", "activities", "cli", "expat", "networking", "community", "apollo", "nextjs"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
