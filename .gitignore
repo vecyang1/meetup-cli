@@ -68,3 +68,23 @@ data/cache/
 .idea/
 *.swp
 *.swo
+
+# Security, Private Workspaces & Agent Constitutions
+VAULT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+CODEX.md
+FILE_MAP_INDEX.md
+MEMORY.md
+PROJECT_LINKS.md
+task_plan.md
+progress.md
+handoff.md
+decisions.md
+operations/
+graphify-out/
+.env.*
+!.env.example
+!.env.sample
+!.env.template
